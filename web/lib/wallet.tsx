@@ -196,11 +196,21 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
 
       const provider = target.provider as { request: (a: { method: string; params?: unknown[] }) => Promise<unknown> };
 
-      // switch chain
+      // switch to Studionet; if not added yet, add it first
       try {
         await provider.request({ method: "wallet_switchEthereumChain", params: [{ chainId: CHAIN_HEX }] });
       } catch {
-        // chain not added — ignore for Studionet (it's not a standard chain)
+        try {
+          await provider.request({
+            method: "wallet_addEthereumChain",
+            params: [{
+              chainId:        CHAIN_HEX,
+              chainName:      "Genlayer Studio Network",
+              rpcUrls:        [CHAIN_RPC],
+              nativeCurrency: { name: "GEN Token", symbol: "GEN", decimals: 18 },
+            }],
+          });
+        } catch { /* user declined or already added */ }
       }
 
       const accounts = await provider.request({ method: "eth_requestAccounts" }) as string[];
