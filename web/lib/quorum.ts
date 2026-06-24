@@ -59,13 +59,13 @@ export async function getStats(): Promise<Stats> {
 }
 
 export async function getPortfolio(address: string): Promise<Portfolio | null> {
-  const raw = await read("get_portfolio", [address]);
+  const raw = await read("get_portfolio", [address.toLowerCase()]);
   if (!raw) return null;
   return JSON.parse(raw as string);
 }
 
 export async function getHistory(address: string, n = 20): Promise<Session[]> {
-  const raw = await read("get_history", [address, BigInt(n)]);
+  const raw = await read("get_history", [address.toLowerCase(), BigInt(n)]);
   if (!raw) return [];
   try { return JSON.parse(raw as string); } catch { return []; }
 }
