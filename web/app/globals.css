@@ -1,0 +1,188 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-canvas:          #0d0d14;
+  --color-surface:         #12121c;
+  --color-surface-soft:    #161625;
+  --color-elevated:        #1c1c2e;
+  --color-ink:             #f0f0f8;
+  --color-body:            #9090aa;
+  --color-muted:           #55556a;
+  --color-hairline:        #1e1e2e;
+  --color-hairline-strong: #272738;
+
+  --color-accent:          #f59e0b;
+  --color-accent-dim:      rgba(245,158,11,0.12);
+  --color-buy:             #22c55e;
+  --color-sell:            #ef4444;
+  --color-hold:            #3b82f6;
+  --color-veto:            #a855f7;
+
+  --font-display: var(--font-serif);
+  --font-body:    var(--font-inter);
+  --font-mono:    var(--font-mono-code);
+}
+
+/* ── base ── */
+body {
+  background: var(--color-canvas);
+  color: var(--color-body);
+  font-family: var(--font-body), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection { background: var(--color-accent); color: var(--color-canvas); }
+
+/* ── typography ── */
+.display {
+  font-family: var(--font-display), Georgia, serif;
+  font-weight: 400;
+  font-style: italic;
+  color: var(--color-ink);
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+}
+.display-upright {
+  font-family: var(--font-display), Georgia, serif;
+  font-weight: 400;
+  font-style: normal;
+  color: var(--color-ink);
+  line-height: 1.15;
+}
+.mono { font-family: var(--font-mono), monospace; }
+.eyebrow {
+  font-family: var(--font-mono), monospace;
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: var(--color-muted);
+}
+.wordmark {
+  font-family: var(--font-mono), monospace;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.25em;
+  color: var(--color-ink);
+}
+
+/* ── card ── */
+.card { background: var(--color-surface); border: 1px solid var(--color-hairline); }
+.card-elevated { background: var(--color-elevated); border: 1px solid var(--color-hairline-strong); }
+
+/* ── buttons ── */
+.btn-primary {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+  font-family: var(--font-mono), monospace; font-size: 0.68rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.18em;
+  color: var(--color-canvas); background: var(--color-accent);
+  border: 1px solid var(--color-accent); border-radius: 9999px;
+  padding: 0.65rem 1.75rem; cursor: pointer; transition: opacity 0.15s; white-space: nowrap;
+}
+.btn-primary:hover:not(:disabled) { opacity: 0.85; }
+.btn-primary:disabled { opacity: 0.35; cursor: not-allowed; }
+
+.btn-ghost {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+  font-family: var(--font-mono), monospace; font-size: 0.68rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.18em;
+  color: var(--color-muted); background: transparent;
+  border: 1px solid var(--color-hairline-strong); border-radius: 9999px;
+  padding: 0.65rem 1.75rem; cursor: pointer; transition: color 0.15s, border-color 0.15s; white-space: nowrap;
+}
+.btn-ghost:hover:not(:disabled) { color: var(--color-ink); border-color: var(--color-ink); }
+.btn-ghost:disabled { opacity: 0.35; cursor: not-allowed; }
+
+/* ── fields ── */
+.field {
+  display: block; width: 100%; background: transparent;
+  border: none; border-bottom: 1px solid var(--color-hairline-strong);
+  color: var(--color-ink); padding: 0.6rem 0; font-size: 1rem;
+  font-family: var(--font-body), system-ui, sans-serif; outline: none; transition: border-color 0.15s;
+}
+.field:focus { border-color: var(--color-accent); }
+.field::placeholder { color: var(--color-muted); }
+
+/* ── link ── */
+.link { color: var(--color-accent); text-decoration: none; }
+.link:hover { text-decoration: underline; }
+
+/* ── vote chips ── */
+.chip {
+  display: inline-flex; align-items: center;
+  font-family: var(--font-mono), monospace; font-size: 0.6rem;
+  font-weight: 700; text-transform: uppercase; letter-spacing: 0.15em;
+  padding: 0.2rem 0.55rem; border: 1px solid currentColor;
+}
+.chip-buy  { color: var(--color-buy);  background: rgba(34,197,94,0.08); }
+.chip-sell { color: var(--color-sell); background: rgba(239,68,68,0.08); }
+.chip-hold { color: var(--color-hold); background: rgba(59,130,246,0.08); }
+.chip-veto { color: var(--color-veto); background: rgba(168,85,247,0.08); }
+
+/* ── agent card ── */
+.agent-card {
+  background: var(--color-surface); border: 1px solid var(--color-hairline);
+  padding: 1rem; transition: border-color 0.3s, box-shadow 0.3s;
+}
+.agent-card[data-state="speaking"] {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 20px rgba(245,158,11,0.1);
+}
+.agent-card[data-state="voted-buy"]  { border-color: rgba(34,197,94,0.4); }
+.agent-card[data-state="voted-sell"] { border-color: rgba(239,68,68,0.4); }
+.agent-card[data-state="voted-hold"] { border-color: rgba(59,130,246,0.4); }
+.agent-card[data-state="vetoed"]     { border-color: rgba(168,85,247,0.4); }
+
+/* ── debate ── */
+.debate-line {
+  font-size: 0.9rem; line-height: 1.65; color: var(--color-muted);
+  padding: 0.75rem 0; border-bottom: 1px solid var(--color-hairline);
+}
+.debate-line.latest { color: var(--color-body); }
+.debate-agent {
+  font-family: var(--font-mono), monospace; font-size: 0.65rem;
+  text-transform: uppercase; letter-spacing: 0.15em; color: var(--color-accent);
+  margin-bottom: 0.25rem;
+}
+
+/* ── progress strip ── */
+.progress-step {
+  display: flex; align-items: center; gap: 0.5rem;
+  font-family: var(--font-mono), monospace; font-size: 0.6rem;
+  text-transform: uppercase; letter-spacing: 0.12em; color: var(--color-muted);
+  padding: 0.4rem 0.75rem; border: 1px solid var(--color-hairline);
+  background: var(--color-surface); transition: all 0.3s;
+}
+.progress-step + .progress-step { border-left: none; }
+.progress-step[data-active] { color: var(--color-accent); border-color: var(--color-accent); background: var(--color-accent-dim); }
+.progress-step[data-done]   { color: var(--color-buy);  border-color: rgba(34,197,94,0.3); }
+
+/* ── convening overlay ── */
+.convening-overlay {
+  position: fixed; inset: 0; z-index: 50;
+  background: rgba(13,13,20,0.92);
+  display: flex; align-items: center; justify-content: center;
+  animation: fade-in 0.2s ease-out;
+}
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+.convening-ring {
+  width: 56px; height: 56px;
+  border: 2px solid var(--color-hairline-strong);
+  border-top-color: var(--color-accent);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── decision banner ── */
+.decision-banner {
+  padding: 1.5rem; text-align: center;
+  border: 1px solid currentColor; animation: fade-in 0.4s ease-out;
+}
+.decision-banner[data-decision="BUY"]    { color: var(--color-buy);  background: rgba(34,197,94,0.06); }
+.decision-banner[data-decision="SELL"]   { color: var(--color-sell); background: rgba(239,68,68,0.06); }
+.decision-banner[data-decision="HOLD"]   { color: var(--color-hold); background: rgba(59,130,246,0.06); }
+.decision-banner[data-decision="VETOED"] { color: var(--color-veto); background: rgba(168,85,247,0.06); }
+
+/* ── return colors ── */
+.text-positive { color: var(--color-buy); }
+.text-negative { color: var(--color-sell); }
