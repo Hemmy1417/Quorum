@@ -72,7 +72,9 @@ export default function ConsolePage() {
       setLastTx(hash);
       await reload();
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error("[QUORUM] convene failed:", e);
+      setError(msg);
     } finally {
       clearInterval(interval);
       setStep(STEPS.length - 1);
@@ -232,7 +234,13 @@ export default function ConsolePage() {
             </div>
           )}
 
-          {error && <p className="text-sell text-sm">{error}</p>}
+          {error && (
+            <div className="card p-4 border-sell" style={{ borderColor: "var(--color-sell)" }}>
+              <p className="eyebrow mb-1" style={{ color: "var(--color-sell)" }}>Committee error</p>
+              <p className="mono text-sm" style={{ color: "var(--color-sell)" }}>{error}</p>
+              <p className="text-muted text-xs mt-2">Open DevTools → Console for full stack trace</p>
+            </div>
+          )}
         </div>
 
         {/* ── Right: Config ── */}
