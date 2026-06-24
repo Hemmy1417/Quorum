@@ -60,7 +60,13 @@ function makeEthersProvider(privateKey: string) {
           return CHAIN_HEX;
         case "eth_sendTransaction": {
           const tx   = (params as Record<string, unknown>[])[0];
-          const sent = await wallet.sendTransaction(tx as ethers.TransactionRequest);
+          // EIP-1193 uses "gas", ethers v6 uses "gasLimit"
+          const sent = await wallet.sendTransaction({
+            to:       tx.to       as string,
+            data:     tx.data     as string,
+            value:    tx.value    as bigint | undefined,
+            gasLimit: tx.gas      as string | undefined,
+          });
           return sent.hash;
         }
         case "personal_sign": {
@@ -200,8 +206,9 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       const accounts = await provider.request({ method: "eth_requestAccounts" }) as string[];
       const addr     = accounts[0];
 
-      // sign message → get Firebase custom token
-      const sig         = await provider.request({ method: "personal_sign", params: [SIGN_MESSAGE, addr] }) as string;
+      // sign message → get Firebase custom token (hex-encode so all wallets interpret correctly)
+      const hexMsg      = ethers.hexlify(ethers.toUtf8Bytes(SIGN_MESSAGE));
+      const sig         = await provider.request({ method: "personal_sign", params: [hexMsg, addr] }) as string;
       const { customToken } = await apiPost("/auth/wallet", { address: addr, signature: sig });
       await signInWithCustomToken(auth, customToken);
 

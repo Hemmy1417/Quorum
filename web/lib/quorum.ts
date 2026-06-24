@@ -1,3 +1,6 @@
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type Client = any;
+
 import { createClient } from "genlayer-js";
 import { CHAIN, CONTRACT_ADDRESS } from "./config";
 import type { Session, Portfolio, LeaderboardEntry, Stats } from "./types";
@@ -25,56 +28,64 @@ async function read(method: string, params: any[] = []): Promise<unknown> {
   }
 }
 
-// ── write helper ───────────────────────────────────────────────────────────
+// ── write helper — mirrors Apex/Aegis pattern ─────────────────────────────
 
 export async function writeAndWait(
-  client: ReturnType<typeof createClient>,
+  client: Client,
   method: string,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  params: any[]
+  params: unknown[]
 ): Promise<string> {
   const hash = await client.writeContract({
     address:      CONTRACT_ADDRESS,
     functionName: method,
     args:         params,
-    value:        BigInt(0),
+    // no value field — omit for non-payable calls (matches Apex pattern)
   });
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (client as any).waitForTransactionReceipt({ hash, status: "ACCEPTED" });
-  return hash as string;
+  await client.waitForTransactionReceipt({
+    hash,
+    status:   "ACCEPTED",
+    interval: 4000,   // poll every 4s
+    retries:  45,     // up to 3 minutes
+  });
+  return String(hash);
 }
 
 // ── reads ──────────────────────────────────────────────────────────────────
 
 export async function getStats(): Promise<Stats> {
   const raw = await read("get_stats");
+  if (!raw) return { total_sessions: 0 };
   return JSON.parse(raw as string);
 }
 
-export async function getPortfolio(address: string): Promise<Portfolio> {
+export async function getPortfolio(address: string): Promise<Portfolio | null> {
   const raw = await read("get_portfolio", [address]);
+  if (!raw) return null;
   return JSON.parse(raw as string);
 }
 
 export async function getHistory(address: string, n = 20): Promise<Session[]> {
   const raw = await read("get_history", [address, BigInt(n)]);
-  return JSON.parse(raw as string);
+  if (!raw) return [];
+  try { return JSON.parse(raw as string); } catch { return []; }
 }
 
 export async function getLeaderboard(n = 20): Promise<LeaderboardEntry[]> {
   const raw = await read("get_leaderboard", [BigInt(n)]);
-  return JSON.parse(raw as string);
+  if (!raw) return [];
+  try { return JSON.parse(raw as string); } catch { return []; }
 }
 
 export async function getSession(sessionId: string): Promise<Session | null> {
   const raw = await read("get_session", [sessionId]);
+  if (!raw) return null;
   return JSON.parse(raw as string);
 }
 
 // ── writes ─────────────────────────────────────────────────────────────────
 
 export async function convene(
-  client: ReturnType<typeof createClient>,
+  client: Client,
   asset: string,
   market: string,
   positionPct: number,
