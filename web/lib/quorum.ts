@@ -35,18 +35,25 @@ export async function writeAndWait(
   method: string,
   params: unknown[]
 ): Promise<string> {
+  console.log("[QUORUM] writeContract →", method, params);
   const hash = await client.writeContract({
     address:      CONTRACT_ADDRESS,
     functionName: method,
     args:         params,
     // no value field — omit for non-payable calls (matches Apex pattern)
   });
-  await client.waitForTransactionReceipt({
+  console.log("[QUORUM] tx submitted →", hash);
+  const receipt = await client.waitForTransactionReceipt({
     hash,
     status:   "ACCEPTED",
     interval: 4000,   // poll every 4s
     retries:  45,     // up to 3 minutes
   });
+  console.log("[QUORUM] receipt →", JSON.stringify(receipt));
+  const status = receipt?.status ?? receipt?.consensus_data?.final_state ?? "";
+  if (String(status).toUpperCase() === "CANCELED" || String(status).toUpperCase() === "UNDETERMINED") {
+    throw new Error(`Transaction ${String(status)}: contract execution failed (check CoinGecko access)`);
+  }
   return String(hash);
 }
 
