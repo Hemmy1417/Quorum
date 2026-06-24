@@ -25,7 +25,7 @@ export default function NavClient() {
         Sign in
       </Link>
       <button
-        onClick={() => connect().catch(() => {})}
+        onClick={() => connect().catch(e => alert(e?.message || "Connection failed"))}
         disabled={busy}
         className="btn-primary !px-4 !py-1.5 text-xs"
       >

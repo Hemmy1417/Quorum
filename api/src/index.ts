@@ -7,7 +7,12 @@ import authRouter from "./routes/auth";
 const app  = express();
 const PORT = process.env.PORT || 3001;
 
-app.use(cors({ origin: process.env.FRONTEND_URL || "*" }));
+app.use(cors({
+  origin:         process.env.FRONTEND_URL || "*",
+  allowedHeaders: ["Content-Type", "Authorization"],
+  methods:        ["GET", "POST", "OPTIONS"],
+}));
+app.options("*", cors());
 app.use(express.json());
 
 app.get("/health", (_, res) => res.json({ status: "ok" }));
