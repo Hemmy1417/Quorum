@@ -23,9 +23,24 @@ const mono = JetBrains_Mono({
   subsets:  ["latin"],
 });
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://quorum.vercel.app";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title:       "QUORUM — Autonomous AI Investment Committee",
-  description: "Five specialized AI agents debate, vote, and reach on-chain consensus on every trade.",
+  description: "Five AI agents debate, vote, and reach a paper-trading verdict entirely on-chain on GenLayer Studionet.",
+  openGraph: {
+    title:       "QUORUM — Autonomous AI Investment Committee",
+    description: "Five AI agents debate, vote, and reach a paper-trading verdict entirely on-chain.",
+    url:         SITE_URL,
+    siteName:    "Quorum",
+    type:        "website",
+  },
+  twitter: {
+    card:        "summary_large_image",
+    title:       "QUORUM — Autonomous AI Investment Committee",
+    description: "Five AI agents debate, vote, and reach a paper-trading verdict entirely on-chain.",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
