@@ -7,16 +7,28 @@ import authRouter from "./routes/auth";
 const app  = express();
 const PORT = process.env.PORT || 3001;
 
-const ALLOWED_ORIGINS = [
+const EXPLICIT_ORIGINS = [
   process.env.FRONTEND_URL,
   "http://localhost:3000",
   "http://localhost:3500",
 ].filter(Boolean) as string[];
 
+// Allow any Vercel deploy of this project (production + previews) without
+// having to keep FRONTEND_URL in sync every time the URL changes.
+function isAllowed(origin: string): boolean {
+  if (EXPLICIT_ORIGINS.includes(origin)) return true;
+  try {
+    const host = new URL(origin).hostname;
+    if (host.endsWith(".vercel.app")) return true;
+    if (host === "localhost" || host === "127.0.0.1") return true;
+  } catch { /* invalid origin URL */ }
+  return false;
+}
+
 app.use(cors({
   origin: (origin, cb) => {
     // allow non-browser requests (curl, Railway health checks) and listed origins
-    if (!origin || ALLOWED_ORIGINS.includes(origin)) return cb(null, true);
+    if (!origin || isAllowed(origin)) return cb(null, true);
     cb(new Error(`CORS: ${origin} not allowed`));
   },
   allowedHeaders: ["Content-Type", "Authorization"],
