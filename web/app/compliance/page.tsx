@@ -65,23 +65,7 @@ export default function CompliancePage() {
                 </div>
                 <div>
                   <div className="eyebrow mb-1">Unique traders</div>
-                  <div className="display-upright text-2xl">{stats.unique_traders}</div>
-                </div>
-                <div>
-                  <div className="eyebrow mb-1">BUY decisions</div>
-                  <div className="display-upright text-xl text-positive">{stats.decisions?.BUY ?? 0}</div>
-                </div>
-                <div>
-                  <div className="eyebrow mb-1">SELL decisions</div>
-                  <div className="display-upright text-xl text-negative">{stats.decisions?.SELL ?? 0}</div>
-                </div>
-                <div>
-                  <div className="eyebrow mb-1">HOLD decisions</div>
-                  <div className="display-upright text-xl" style={{ color: "var(--color-hold)" }}>{stats.decisions?.HOLD ?? 0}</div>
-                </div>
-                <div>
-                  <div className="eyebrow mb-1">Vetoed</div>
-                  <div className="display-upright text-xl" style={{ color: "var(--color-veto)" }}>{stats.decisions?.VETOED ?? 0}</div>
+                  <div className="display-upright text-2xl">{leaderboard.length}</div>
                 </div>
               </div>
             </div>
@@ -156,13 +140,13 @@ export default function CompliancePage() {
               <div key={i} className="flex items-center gap-3 py-3 border-b border-hairline last:border-0">
                 <span className="eyebrow w-6 text-center">{i + 1}</span>
                 <div className="flex-1 min-w-0">
-                  <div className="mono text-xs">{formatAddr(e.address)}</div>
-                  <div className="eyebrow mt-0.5">{e.sessions} sessions</div>
+                  <div className="mono text-xs">{formatAddr(e.owner)}</div>
+                  <div className="eyebrow mt-0.5">{e.total_sessions} sessions · {e.wins}W / {e.losses}L</div>
                 </div>
                 <div className="text-right">
                   <div className="mono text-sm font-bold">{formatUSDT(e.equity)}</div>
-                  <div className={`mono text-xs ${e.return_pct >= 0 ? "text-positive" : "text-negative"}`}>
-                    {formatReturn(e.return_pct)}
+                  <div className={`mono text-xs ${e.total_return_pct >= 0 ? "text-positive" : "text-negative"}`}>
+                    {formatReturn(e.total_return_pct)}
                   </div>
                 </div>
               </div>

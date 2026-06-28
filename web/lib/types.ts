@@ -79,22 +79,15 @@ export interface Portfolio {
 }
 
 export interface LeaderboardEntry {
-  address:    string;
-  equity:     number;
-  return_pct: number;
-  sessions:   number;
-  wins?:      number;
-  losses?:    number;
-  win_rate?:  number;
+  owner:            string;
+  equity:           number;
+  total_return_pct: number;
+  total_sessions:   number;
+  wins:             number;
+  losses:           number;
+  win_rate:         number;
 }
 
 export interface Stats {
-  total_sessions:  number;
-  unique_traders?: number;
-  decisions?: {
-    BUY:    number;
-    SELL:   number;
-    HOLD:   number;
-    VETOED: number;
-  };
+  total_sessions: number;
 }
