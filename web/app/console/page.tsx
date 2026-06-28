@@ -140,11 +140,11 @@ export default function ConsolePage() {
       {/* Convening overlay */}
       {convening && (
         <div className="convening-overlay">
-          <div className="text-center">
+          <div className="text-center max-w-md px-6">
             <div className="convening-ring mx-auto" />
             <p className="display-upright text-xl mt-6 text-accent">THE COMMITTEE DELIBERATES</p>
-            <p className="text-muted text-sm mt-2">Validators reaching consensus…</p>
-            <div className="flex justify-center gap-0 mt-8">
+            <p className="text-muted text-sm mt-2">Five validators running five agents through eq_principle consensus.</p>
+            <div className="flex justify-center gap-0 mt-8 flex-wrap">
               {STEPS.map((s, i) => (
                 <div key={s} className="progress-step"
                   data-active={step === i ? true : undefined}
@@ -153,6 +153,9 @@ export default function ConsolePage() {
                 </div>
               ))}
             </div>
+            <p className="eyebrow mt-6" style={{ opacity: 0.6 }}>
+              Phases are estimated — actual progress lives on-chain. Full settlement takes 1–3 min.
+            </p>
           </div>
         </div>
       )}
@@ -169,6 +172,10 @@ export default function ConsolePage() {
             <div className="mono text-sm mt-1">
               #{session ? (session.session_id.split("_").pop() ?? "—") : "—"}
             </div>
+          </div>
+          <div>
+            <div className="eyebrow">Mode</div>
+            <div className="mono text-sm mt-1">PAPER · no real funds</div>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -226,7 +233,7 @@ export default function ConsolePage() {
             </div>
             <div className="card p-5">
               <div className="flex items-center justify-between mb-3">
-                <p className="eyebrow">Explainable Confidence</p>
+                <p className="eyebrow">Quorum Confidence</p>
                 <span className="eyebrow">/100</span>
               </div>
               <div className="display text-4xl mb-1">
@@ -387,7 +394,7 @@ export default function ConsolePage() {
               ))}
             </div>
             <div className="pt-3 border-t border-hairline">
-              <div className="eyebrow mb-1">Council Consensus</div>
+              <div className="eyebrow mb-1">Committee Consensus</div>
               <p className="text-sm" style={{ color: "var(--color-body)" }}>
                 {session
                   ? `${session.decision} carried with ${session.confidence}% confidence.`
@@ -487,7 +494,7 @@ export default function ConsolePage() {
             </div>
             {convening && !session && (
               <p className="text-sm italic" style={{ color: "var(--color-body)" }}>
-                Connecting to the council floor…
+                Listening to the chamber…
               </p>
             )}
             {session && (session.agent_outputs ?? []).length > 0 ? (
@@ -516,7 +523,7 @@ export default function ConsolePage() {
               </div>
             ) : !convening && (
               <p className="text-sm" style={{ color: "var(--color-body)" }}>
-                The floor is empty. Convene the council to begin.
+                The chamber is empty. Convene the committee to begin.
               </p>
             )}
           </div>
@@ -661,15 +668,16 @@ export default function ConsolePage() {
               </div>
             </div>
             <p className="text-xs" style={{ color: "var(--color-body)", opacity: 0.85 }}>
-              Council suggests an optimal size; execution never exceeds your cap.
+              QUORUM suggests an optimal size; execution never exceeds your cap.
+              <span className="block mt-1 opacity-70">User-max is a UI safeguard — only position_pct is sent on-chain in this build.</span>
             </p>
 
             <button onClick={handleConvene} disabled={convening || !client}
               className="btn-primary w-full !py-3">
-              {convening ? "Committee deliberating…" : "Convene Council"}
+              {convening ? "Committee deliberating…" : "Convene the committee"}
             </button>
             <p className="text-muted text-xs text-center">
-              The committee stays idle until you convene. Launching opens the live console — takes 1–3 minutes.
+              The committee stays idle until you convene. Settles on-chain in 1–3 min.
             </p>
           </div>
 
