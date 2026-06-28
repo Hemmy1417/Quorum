@@ -140,6 +140,7 @@ export default function ConsolePage() {
     if (port) setPortfolio(port);
   }, [address]);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { reload(); }, [reload]);
 
   // ── derived values for Trade Configuration ────────────────────────────────

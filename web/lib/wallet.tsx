@@ -247,6 +247,8 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     const token = await getIdToken();
     const { privateKey } = await apiPost("/wallet/export", {}, token);
     return privateKey;
+    // getIdToken closes over firebaseUser; depending on firebaseUser is sufficient.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [firebaseUser]);
 
   return (

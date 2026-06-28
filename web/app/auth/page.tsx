@@ -114,6 +114,7 @@ export default function AuthPage() {
               <button key={w.rdns} onClick={() => handleWallet(w.rdns)}
                 disabled={busy}
                 className="btn-ghost w-full !py-2.5 flex items-center gap-3">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 {w.icon && <img src={w.icon} alt="" className="w-5 h-5 rounded" />}
                 {w.name}
               </button>

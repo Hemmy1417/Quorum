@@ -41,6 +41,7 @@ export default function PortfolioPage() {
     setLoading(false);
   }, [address]);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { load(); }, [load]);
 
   if (!address) {

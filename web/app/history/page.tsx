@@ -20,6 +20,7 @@ export default function HistoryPage() {
     setLoading(false);
   }, [address]);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { load(); }, [load]);
 
   if (!address) {
