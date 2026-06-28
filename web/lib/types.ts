@@ -29,11 +29,19 @@ export interface ExecutionOutput {
 }
 
 export interface Trade {
-  action:      "BUY" | "SELL" | "HOLD";
-  price:       number;
-  size:        number;
-  usdt_amount: number;
-  pnl?:        number;
+  action?:      "BUY" | "SELL" | "HOLD";
+  pair?:        string;
+  direction?:   "BUY" | "SELL";
+  market?:      string;
+  entry_price?: number;
+  exit_price?:  number;
+  price?:       number;
+  size?:        number;
+  quantity?:    number;
+  allocation?:  number;
+  usdt_amount?: number;
+  status?:      "open" | "closed";
+  pnl?:         number;
 }
 
 export interface Session {
@@ -55,6 +63,7 @@ export interface Session {
   dissent?:       string;
   execution_note?: string;
   vote_breakdown: { BUY: number; HOLD: number; SELL: number };
+  paper_trade?:   Trade;
   trade?:         Trade;
   timestamp?:     string;
   status:         "complete" | "vetoed";

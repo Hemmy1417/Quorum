@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useWallet } from "@/lib/wallet";
 import { QuorumMark } from "@/components/Logo";
@@ -14,10 +14,9 @@ export default function AuthPage() {
   const [password, setPassword] = useState("");
   const [error,    setError]    = useState("");
 
-  if (address) {
-    router.push("/console");
-    return null;
-  }
+  useEffect(() => {
+    if (address) router.push("/console");
+  }, [address, router]);
 
   async function handleEmail(e: React.FormEvent) {
     e.preventDefault();

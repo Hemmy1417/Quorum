@@ -120,29 +120,37 @@ export default function ChamberPage() {
             )}
 
             {/* Trade */}
-            {s.trade && (
-              <div className="mt-4 pt-4 border-t border-hairline flex items-center gap-6">
+            {s.paper_trade && (s.paper_trade.allocation || s.paper_trade.pnl !== undefined) && (
+              <div className="mt-4 pt-4 border-t border-hairline flex items-center gap-6 flex-wrap">
                 <div>
                   <div className="eyebrow mb-0.5">Action</div>
-                  <span className={`chip chip-${s.trade.action.toLowerCase()}`}>{s.trade.action}</span>
+                  <span className={`chip chip-${(s.paper_trade.direction ?? s.decision).toLowerCase()}`}>
+                    {s.paper_trade.direction ?? s.decision}
+                  </span>
                 </div>
                 <div>
-                  <div className="eyebrow mb-0.5">Price</div>
-                  <div className="mono text-sm">${s.trade.price.toLocaleString()}</div>
+                  <div className="eyebrow mb-0.5">{s.paper_trade.status === "closed" ? "Exit price" : "Entry price"}</div>
+                  <div className="mono text-sm">
+                    ${(s.paper_trade.exit_price ?? s.paper_trade.entry_price ?? s.price).toLocaleString()}
+                  </div>
                 </div>
                 <div>
-                  <div className="eyebrow mb-0.5">Size</div>
-                  <div className="mono text-sm">{s.trade.size.toFixed(4)} {s.asset.replace("USDT","")}</div>
+                  <div className="eyebrow mb-0.5">Quantity</div>
+                  <div className="mono text-sm">
+                    {(s.paper_trade.quantity ?? 0).toFixed(4)} {s.asset.replace("USDT","")}
+                  </div>
                 </div>
                 <div>
                   <div className="eyebrow mb-0.5">USDT</div>
-                  <div className="mono text-sm">${s.trade.usdt_amount.toLocaleString(undefined, {minimumFractionDigits: 2})}</div>
+                  <div className="mono text-sm">
+                    ${(s.paper_trade.allocation ?? 0).toLocaleString(undefined, {minimumFractionDigits: 2})}
+                  </div>
                 </div>
-                {s.trade.pnl !== undefined && s.trade.pnl !== 0 && (
+                {s.paper_trade.pnl !== undefined && s.paper_trade.pnl !== 0 && (
                   <div>
                     <div className="eyebrow mb-0.5">PnL</div>
-                    <div className={`mono text-sm font-bold ${s.trade.pnl >= 0 ? "text-positive" : "text-negative"}`}>
-                      {s.trade.pnl >= 0 ? "+" : ""}{s.trade.pnl.toFixed(2)} USDT
+                    <div className={`mono text-sm font-bold ${s.paper_trade.pnl >= 0 ? "text-positive" : "text-negative"}`}>
+                      {s.paper_trade.pnl >= 0 ? "+" : ""}{s.paper_trade.pnl.toFixed(2)} USDT
                     </div>
                   </div>
                 )}

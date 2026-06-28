@@ -10,11 +10,21 @@ import type { Session, Portfolio } from "@/lib/types";
 const STEPS = ["Market Scan", "Debate", "Voting", "Risk Review", "Decision"];
 
 const AGENTS = [
-  { emoji: "📈", name: "Technical Analyst" },
-  { emoji: "📰", name: "News Analyst"       },
-  { emoji: "🧮", name: "Quant Analyst"      },
-  { emoji: "🛡️", name: "Risk Manager"       },
-  { emoji: "⚖️", name: "Execution Agent", chair: true },
+  { emoji: "📈", name: "Technical Analyst",
+    tagline: "Chart purist — structure over noise.",
+    role:    "Reads price structure, trend, momentum, volume, and key support / resistance." },
+  { emoji: "📰", name: "News Analyst",
+    tagline: "Momentum chaser — reads the room.",
+    role:    "Tracks macro, sentiment, ETF flows, and narrative momentum." },
+  { emoji: "🧮", name: "Quant Analyst",
+    tagline: "Cold and mathematical.",
+    role:    "Works in probability — stretched or fair, trending or mean-reverting." },
+  { emoji: "🛡️", name: "Risk Manager",
+    tagline: "Paranoid guardian — holds the veto.",
+    role:    "Watches drawdown, volatility, and exposure. Can freeze any trade." },
+  { emoji: "⚖️", name: "Execution Agent", chair: true,
+    tagline: "Weighs the room, calls the verdict.",
+    role:    "Chair. Synthesises the debate and delivers the final binding decision." },
 ];
 
 function voteState(agentName: string, session: Session | null): string {
@@ -146,6 +156,73 @@ export default function ConsolePage() {
             </div>
           )}
 
+          {/* What actually happened */}
+          {session && (
+            <div className="card p-5">
+              <p className="eyebrow mb-3">What just happened</p>
+              {session.decision === "VETOED" && (
+                <p className="text-sm leading-relaxed">
+                  The Risk Manager <strong style={{ color: "var(--color-veto)" }}>vetoed</strong> the trade. No position
+                  was opened and no funds were committed. Your paper-trading portfolio is unchanged.
+                </p>
+              )}
+              {session.decision === "HOLD" && (
+                <p className="text-sm leading-relaxed">
+                  The committee voted <strong style={{ color: "var(--color-hold)" }}>HOLD</strong>. No new position was
+                  opened and no existing positions were touched. Your portfolio is unchanged.
+                </p>
+              )}
+              {session.decision === "BUY" && session.paper_trade?.allocation ? (
+                <div className="flex flex-col gap-2 text-sm leading-relaxed">
+                  <p>
+                    The committee voted <strong style={{ color: "var(--color-buy)" }}>BUY</strong>. A paper position was
+                    opened on <strong>{session.asset}</strong> at <strong>${session.price.toLocaleString()}</strong>.
+                  </p>
+                  <div className="grid grid-cols-2 gap-3 mt-2 mono text-xs">
+                    <div>
+                      <div className="eyebrow mb-1">Allocated</div>
+                      <div>${formatUSDT(session.paper_trade.allocation)} USDT</div>
+                    </div>
+                    <div>
+                      <div className="eyebrow mb-1">Quantity</div>
+                      <div>{session.paper_trade.quantity?.toFixed(6)} {session.asset.replace("USDT", "")}</div>
+                    </div>
+                  </div>
+                  <p className="text-xs mt-2" style={{ color: "var(--color-body)", opacity: 0.8 }}>
+                    Open the next session with a SELL vote on the same asset to close this position and realise P&L.
+                  </p>
+                </div>
+              ) : null}
+              {session.decision === "SELL" && (
+                <div className="flex flex-col gap-2 text-sm leading-relaxed">
+                  <p>
+                    The committee voted <strong style={{ color: "var(--color-sell)" }}>SELL</strong>.
+                    {session.paper_trade?.pnl !== undefined ? (
+                      <> An open <strong>{session.asset}</strong> position was closed at <strong>${session.price.toLocaleString()}</strong>.</>
+                    ) : (
+                      <> No open {session.asset} position was found to close — paper portfolio is unchanged.</>
+                    )}
+                  </p>
+                  {session.paper_trade?.pnl !== undefined && (
+                    <div className="mono text-sm mt-1">
+                      Realised P&L:{" "}
+                      <span className={session.paper_trade.pnl >= 0 ? "text-positive" : "text-negative"}>
+                        {session.paper_trade.pnl >= 0 ? "+" : ""}
+                        ${formatUSDT(session.paper_trade.pnl)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+              <div className="mt-4 pt-3 border-t border-hairline flex items-center justify-between text-xs mono">
+                <span style={{ color: "var(--color-body)", opacity: 0.85 }}>
+                  Session #{session.session_id.split("_").pop()}
+                </span>
+                <Link href="/portfolio" className="link">View portfolio →</Link>
+              </div>
+            </div>
+          )}
+
           {/* Agent cards */}
           <div>
             <p className="eyebrow mb-4">Committee status</p>
@@ -162,7 +239,13 @@ export default function ConsolePage() {
                       <span className="text-xl">{a.emoji}</span>
                       {a.chair && <span className="eyebrow text-accent">Chair</span>}
                     </div>
-                    <div className="display-upright text-sm mb-1">{a.name}</div>
+                    <div className="display-upright text-sm">{a.name}</div>
+                    <p className="text-xs italic mt-1" style={{ color: "var(--color-accent)" }}>
+                      {a.tagline}
+                    </p>
+                    <p className="text-xs leading-snug mt-1 mb-2" style={{ color: "var(--color-body)", opacity: 0.85 }}>
+                      {a.role}
+                    </p>
 
                     {/* Show vote/output after session */}
                     {output && (

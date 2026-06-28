@@ -140,7 +140,7 @@ export default function PortfolioPage() {
           )}
 
           {/* Trade history table */}
-          {sessions.filter(s => s.trade).length > 0 && (
+          {sessions.filter(s => s.paper_trade && (s.paper_trade.allocation || s.paper_trade.pnl !== undefined)).length > 0 && (
             <div className="card p-5">
               <p className="eyebrow mb-4">Trade history</p>
               <div className="overflow-x-auto">
@@ -153,23 +153,30 @@ export default function PortfolioPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {sessions.filter(s => s.trade).map((s, i) => (
-                      <tr key={i} className="border-b border-hairline last:border-0">
-                        <td className="py-2.5 pr-4 text-ink">{s.asset}</td>
-                        <td className="py-2.5 pr-4">
-                          <span className={`chip chip-${s.trade!.action.toLowerCase()}`}>{s.trade!.action}</span>
-                        </td>
-                        <td className="py-2.5 pr-4">${s.trade!.price.toLocaleString()}</td>
-                        <td className="py-2.5 pr-4">{s.trade!.size.toFixed(4)}</td>
-                        <td className="py-2.5 pr-4">${s.trade!.usdt_amount.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
-                        <td className={`py-2.5 pr-4 font-bold ${(s.trade?.pnl ?? 0) >= 0 ? "text-positive" : "text-negative"}`}>
-                          {s.trade?.pnl !== undefined && s.trade.pnl !== 0
-                            ? `${s.trade.pnl >= 0 ? "+" : ""}${s.trade.pnl.toFixed(2)}`
-                            : "—"}
-                        </td>
-                        <td className="py-2.5 text-muted">{s.timestamp?.slice(0, 10)}</td>
-                      </tr>
-                    ))}
+                    {sessions
+                      .filter(s => s.paper_trade && (s.paper_trade.allocation || s.paper_trade.pnl !== undefined))
+                      .map((s, i) => {
+                        const t = s.paper_trade!;
+                        const action = t.direction ?? s.decision;
+                        const price = t.exit_price ?? t.entry_price ?? s.price;
+                        return (
+                          <tr key={i} className="border-b border-hairline last:border-0">
+                            <td className="py-2.5 pr-4 text-ink">{s.asset}</td>
+                            <td className="py-2.5 pr-4">
+                              <span className={`chip chip-${action.toLowerCase()}`}>{action}</span>
+                            </td>
+                            <td className="py-2.5 pr-4">${price.toLocaleString()}</td>
+                            <td className="py-2.5 pr-4">{(t.quantity ?? 0).toFixed(4)}</td>
+                            <td className="py-2.5 pr-4">${(t.allocation ?? 0).toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                            <td className={`py-2.5 pr-4 font-bold ${(t.pnl ?? 0) >= 0 ? "text-positive" : "text-negative"}`}>
+                              {t.pnl !== undefined && t.pnl !== 0
+                                ? `${t.pnl >= 0 ? "+" : ""}${t.pnl.toFixed(2)}`
+                                : "—"}
+                            </td>
+                            <td className="py-2.5 text-muted">{s.timestamp?.slice(0, 10)}</td>
+                          </tr>
+                        );
+                      })}
                   </tbody>
                 </table>
               </div>
