@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useWallet } from "@/lib/wallet";
 import { convene, getHistory, getPortfolio, formatUSDT, formatReturn } from "@/lib/quorum";
@@ -10,22 +10,29 @@ import type { Session, Portfolio } from "@/lib/types";
 const STEPS = ["Market Scan", "Debate", "Voting", "Risk Review", "Decision"];
 
 const AGENTS = [
-  { emoji: "📈", name: "Technical Analyst",
-    tagline: "Chart purist — structure over noise.",
-    role:    "Reads price structure, trend, momentum, volume, and key support / resistance." },
-  { emoji: "📰", name: "News Analyst",
-    tagline: "Momentum chaser — reads the room.",
-    role:    "Tracks macro, sentiment, ETF flows, and narrative momentum." },
-  { emoji: "🧮", name: "Quant Analyst",
-    tagline: "Cold and mathematical.",
-    role:    "Works in probability — stretched or fair, trending or mean-reverting." },
-  { emoji: "🛡️", name: "Risk Manager",
-    tagline: "Paranoid guardian — holds the veto.",
-    role:    "Watches drawdown, volatility, and exposure. Can freeze any trade." },
+  { emoji: "📈", name: "Technical Analyst", chair: false,
+    tags:    "RSI · MACD · EMA · S/R",
+    tagline: "Chart purist — structure over noise, opens the case." },
+  { emoji: "📰", name: "News Analyst", chair: false,
+    tags:    "sentiment · ETF · macro",
+    tagline: "Momentum chaser — reads the room, trusts the tape." },
+  { emoji: "🧮", name: "Quant Analyst", chair: false,
+    tags:    "probability · statistics",
+    tagline: "Cold and mathematical — fades stretched extremes." },
+  { emoji: "🛡️", name: "Risk Manager", chair: false,
+    tags:    "drawdown · volatility · exposure",
+    tagline: "Paranoid guardian — holds the veto, protects capital." },
   { emoji: "⚖️", name: "Execution Agent", chair: true,
-    tagline: "Weighs the room, calls the verdict.",
-    role:    "Chair. Synthesises the debate and delivers the final binding decision." },
+    tags:    "synthesis · decision",
+    tagline: "The chairman — weighs the room, calls the verdict." },
 ];
+
+// Council-style heuristic: expected % loss per trade as a function of risk level and position size.
+const LOSS_FACTOR: Record<"conservative"|"moderate"|"aggressive", number> = {
+  conservative: 0.06,
+  moderate:     0.10,
+  aggressive:   0.18,
+};
 
 function voteState(agentName: string, session: Session | null): string {
   if (!session) return "awaiting";
@@ -45,11 +52,14 @@ export default function ConsolePage() {
   const [asset,       setAsset]       = useState("BTCUSDT");
   const [market,      setMarket]      = useState<"spot"|"futures">("spot");
   const [posPct,      setPosPct]      = useState(10);
+  const [posUnit,     setPosUnit]     = useState<"pct"|"usdt">("pct");
+  const [userMaxLoss, setUserMaxLoss] = useState(10);
   const [riskLevel,   setRiskLevel]   = useState<"conservative"|"moderate"|"aggressive">("moderate");
   const [convening,   setConvening]   = useState(false);
   const [lastTx,      setLastTx]      = useState("");
   const [error,       setError]       = useState("");
   const [session,     setSession]     = useState<Session | null>(null);
+  const [history,     setHistory]     = useState<Session[]>([]);
   const [portfolio,   setPortfolio]   = useState<Portfolio | null>(null);
   const [step,        setStep]        = useState(-1);
 
@@ -58,20 +68,38 @@ export default function ConsolePage() {
   const reload = useCallback(async () => {
     if (!address || !CONTRACT_CONFIGURED) return;
     const [hist, port] = await Promise.all([
-      getHistory(address, 1).catch(() => []),
+      getHistory(address, 20).catch(() => []),
       getPortfolio(address).catch(() => null),
     ]);
+    setHistory(hist);
     if (hist.length) setSession(hist[0]);
     if (port) setPortfolio(port);
   }, [address]);
 
   useEffect(() => { reload(); }, [reload]);
 
+  // ── derived values for Trade Configuration ────────────────────────────────
+  const equity         = portfolio?.equity ?? 100_000;
+  const exposureUsdt   = (equity * posPct) / 100;
+  const councilLossPct = +(posPct * LOSS_FACTOR[riskLevel]).toFixed(1);
+  const finalLossPct   = Math.min(councilLossPct, userMaxLoss);
+
+  // ── ballot derived ─────────────────────────────────────────────────────────
+  const votesCast = session
+    ? (session.agent_outputs?.length ?? 0) + (session.risk_review ? 1 : 0) + (session.execution ? 1 : 0)
+    : 0;
+
+  const sessionStatus = convening ? "DELIBERATING" : session ? "COMPLETE" : "IDLE";
+
+  const ledgerTrades = useMemo(
+    () => history.filter(s => s.paper_trade && (s.paper_trade.allocation || s.paper_trade.pnl !== undefined)),
+    [history],
+  );
+
   async function handleConvene() {
     if (!client || !address) return;
     setError(""); setConvening(true); setSession(null); setStep(0);
 
-    // Animate steps while waiting for validators
     const interval = setInterval(() => {
       stepRef.current = Math.min(stepRef.current + 1, STEPS.length - 1);
       setStep(stepRef.current);
@@ -129,6 +157,32 @@ export default function ConsolePage() {
         </div>
       )}
 
+      {/* ── Session header strip ───────────────────────────────────────── */}
+      <div className="card p-4 mb-6 flex items-center justify-between flex-wrap gap-3">
+        <div className="flex items-center gap-6">
+          <div>
+            <div className="eyebrow">Subject</div>
+            <div className="mono text-sm mt-1">{session?.asset ?? asset}</div>
+          </div>
+          <div>
+            <div className="eyebrow">Session</div>
+            <div className="mono text-sm mt-1">
+              #{session ? (session.session_id.split("_").pop() ?? "—") : "—"}
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className={`chip ${
+            sessionStatus === "DELIBERATING" ? "chip-hold"
+            : sessionStatus === "COMPLETE"    ? "chip-buy"
+            :                                   "chip-veto"
+          }`}>
+            {sessionStatus}
+          </span>
+          <span className="eyebrow">{convening ? "online" : "standby"}</span>
+        </div>
+      </div>
+
       <div className="grid lg:grid-cols-[1fr_340px] gap-8 items-start">
 
         {/* ── Left: Main ── */}
@@ -156,7 +210,35 @@ export default function ConsolePage() {
             </div>
           )}
 
-          {/* What actually happened */}
+          {/* ── Decision Metrics — Explainable Confidence ──────────────── */}
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div className="card p-5">
+              <div className="flex items-center justify-between mb-3">
+                <p className="eyebrow">Council Decision</p>
+                <span className="eyebrow">verdict</span>
+              </div>
+              <div className="display text-4xl mb-1">
+                {session?.decision ?? "—"}
+              </div>
+              <p className="text-xs" style={{ color: "var(--color-body)", opacity: 0.85 }}>
+                {session ? "Final verdict from the Chair." : "No session in progress."}
+              </p>
+            </div>
+            <div className="card p-5">
+              <div className="flex items-center justify-between mb-3">
+                <p className="eyebrow">Explainable Confidence</p>
+                <span className="eyebrow">/100</span>
+              </div>
+              <div className="display text-4xl mb-1">
+                {session ? session.confidence : "—"}
+              </div>
+              <p className="text-xs" style={{ color: "var(--color-body)", opacity: 0.85 }}>
+                {session?.summary ? "Why the score landed here." : "Awaiting committee inputs…"}
+              </p>
+            </div>
+          </div>
+
+          {/* ── What just happened ─────────────────────────────────────── */}
           {session && (
             <div className="card p-5">
               <p className="eyebrow mb-3">What just happened</p>
@@ -223,9 +305,12 @@ export default function ConsolePage() {
             </div>
           )}
 
-          {/* Agent cards */}
+          {/* ── The Committee 5 ────────────────────────────────────────── */}
           <div>
-            <p className="eyebrow mb-4">Committee status</p>
+            <div className="flex items-baseline justify-between mb-4">
+              <p className="eyebrow">The Committee</p>
+              <span className="eyebrow">5 agents</span>
+            </div>
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {AGENTS.map(a => {
                 const state = session ? voteState(a.name, session) : "awaiting";
@@ -240,11 +325,11 @@ export default function ConsolePage() {
                       {a.chair && <span className="eyebrow text-accent">Chair</span>}
                     </div>
                     <div className="display-upright text-sm">{a.name}</div>
-                    <p className="text-xs italic mt-1" style={{ color: "var(--color-accent)" }}>
-                      {a.tagline}
+                    <p className="mono text-xs mt-1" style={{ color: "var(--color-accent)", opacity: 0.9 }}>
+                      {a.tags}
                     </p>
-                    <p className="text-xs leading-snug mt-1 mb-2" style={{ color: "var(--color-body)", opacity: 0.85 }}>
-                      {a.role}
+                    <p className="text-xs italic leading-snug mt-1 mb-2" style={{ color: "var(--color-body)", opacity: 0.9 }}>
+                      {a.tagline}
                     </p>
 
                     {/* Show vote/output after session */}
@@ -284,20 +369,135 @@ export default function ConsolePage() {
             </div>
           </div>
 
-          {/* Debate log */}
-          {session && (session.agent_outputs ?? []).length > 0 && (
-            <div>
-              <p className="eyebrow mb-3">Debate transcript</p>
+          {/* ── Committee Ballot ───────────────────────────────────────── */}
+          <div className="card p-5">
+            <div className="flex items-center justify-between mb-4">
+              <p className="eyebrow">Committee Ballot</p>
+              <span className="eyebrow">{votesCast}/5 cast</span>
+            </div>
+            <div className="grid grid-cols-3 gap-4 mb-4">
+              {(["BUY", "HOLD", "SELL"] as const).map(v => (
+                <div key={v} className="text-center">
+                  <div className={`display text-3xl ${v === "BUY" ? "text-positive" : v === "SELL" ? "text-negative" : ""}`}
+                       style={v === "HOLD" ? { color: "var(--color-hold)" } : {}}>
+                    {session?.vote_breakdown[v] ?? 0}
+                  </div>
+                  <div className="eyebrow mt-1">{v}</div>
+                </div>
+              ))}
+            </div>
+            <div className="pt-3 border-t border-hairline">
+              <div className="eyebrow mb-1">Council Consensus</div>
+              <p className="text-sm" style={{ color: "var(--color-body)" }}>
+                {session
+                  ? `${session.decision} carried with ${session.confidence}% confidence.`
+                  : convening ? "Awaiting the committee's votes…" : "No vote on record."}
+              </p>
+            </div>
+          </div>
+
+          {/* ── Risk Review ────────────────────────────────────────────── */}
+          <div className="card p-5">
+            <div className="flex items-center justify-between mb-4">
+              <p className="eyebrow">🛡️ Risk Review</p>
+              <span className={`chip ${
+                session?.risk_review?.veto ? "chip-veto"
+                : session?.risk_review     ? "chip-buy"
+                : convening                ? "chip-hold"
+                :                            "chip-hold"
+              }`}>
+                {session?.risk_review?.veto ? "VETOED"
+                : session?.risk_review      ? "CLEARED"
+                : convening                 ? "REVIEWING"
+                :                             "STANDBY"}
+              </span>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <div>
+                <div className="eyebrow mb-1">Risk Score</div>
+                <div className="mono text-lg">{session?.risk_review?.risk_score ?? "—"}<span className="text-xs ml-1">/100</span></div>
+              </div>
+              <div>
+                <div className="eyebrow mb-1">Volatility</div>
+                <div className="mono text-sm">{session?.risk_review?.volatility_assessment ?? "—"}</div>
+              </div>
+              <div>
+                <div className="eyebrow mb-1">Exposure</div>
+                <div className="mono text-sm">{session?.risk_review?.exposure_assessment ?? "—"}</div>
+              </div>
+              <div>
+                <div className="eyebrow mb-1">Position Size</div>
+                <div className="mono text-sm">{session?.position_pct ? `${session.position_pct.toFixed(0)}%` : `${posPct}%`}</div>
+              </div>
+            </div>
+            {session?.risk_review?.reasoning && (
+              <p className="text-xs mt-4 pt-3 border-t border-hairline italic" style={{ color: "var(--color-body)" }}>
+                “{session.risk_review.reasoning}”
+              </p>
+            )}
+          </div>
+
+          {/* ── Paper Trade — Execution Record ─────────────────────────── */}
+          <div className="card p-5">
+            <div className="flex items-center justify-between mb-4">
+              <p className="eyebrow">Paper Trade</p>
+              <span className="eyebrow">Execution Record</span>
+            </div>
+            {session?.paper_trade && (session.paper_trade.allocation || session.paper_trade.pnl !== undefined) ? (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div>
+                  <div className="eyebrow mb-1">Action</div>
+                  <span className={`chip chip-${(session.paper_trade.direction ?? session.decision).toLowerCase()}`}>
+                    {session.paper_trade.direction ?? session.decision}
+                  </span>
+                </div>
+                <div>
+                  <div className="eyebrow mb-1">{session.paper_trade.status === "closed" ? "Exit" : "Entry"}</div>
+                  <div className="mono text-sm">
+                    ${(session.paper_trade.exit_price ?? session.paper_trade.entry_price ?? session.price).toLocaleString()}
+                  </div>
+                </div>
+                <div>
+                  <div className="eyebrow mb-1">Allocation</div>
+                  <div className="mono text-sm">
+                    ${formatUSDT(session.paper_trade.allocation ?? 0)}
+                  </div>
+                </div>
+                <div>
+                  <div className="eyebrow mb-1">PnL</div>
+                  <div className={`mono text-sm font-bold ${(session.paper_trade.pnl ?? 0) >= 0 ? "text-positive" : "text-negative"}`}>
+                    {session.paper_trade.pnl !== undefined
+                      ? `${session.paper_trade.pnl >= 0 ? "+" : ""}${session.paper_trade.pnl.toFixed(2)}`
+                      : "—"}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm" style={{ color: "var(--color-body)" }}>
+                {convening ? "Awaiting decision…" : "No paper trades yet."}
+              </p>
+            )}
+          </div>
+
+          {/* ── Debate Timeline ────────────────────────────────────────── */}
+          <div className="card p-5">
+            <div className="flex items-center justify-between mb-4">
+              <p className="eyebrow">Debate Timeline</p>
+              <span className="eyebrow">· supporting detail</span>
+            </div>
+            {convening && !session && (
+              <p className="text-sm italic" style={{ color: "var(--color-body)" }}>
+                Connecting to the council floor…
+              </p>
+            )}
+            {session && (session.agent_outputs ?? []).length > 0 ? (
               <div className="flex flex-col">
-                {(session.agent_outputs ?? []).map((a, i) => {
-                  const outputs = session.agent_outputs ?? [];
-                  return (
-                    <div key={i} className={`debate-line ${i === outputs.length - 1 ? "latest" : ""}`}>
-                      <div className="debate-agent">{a.agent} · {a.vote} · {a.confidence}%</div>
-                      <p>{a.analysis}</p>
-                    </div>
-                  );
-                })}
+                {(session.agent_outputs ?? []).map((a, i) => (
+                  <div key={i} className="debate-line">
+                    <div className="debate-agent">{a.agent} · {a.vote} · {a.confidence}%</div>
+                    <p>{a.analysis}</p>
+                  </div>
+                ))}
                 {session.risk_review && (
                   <div className="debate-line">
                     <div className="debate-agent">Risk Manager · {session.risk_review.veto ? "VETO" : "CLEARED"} · Risk {session.risk_review.risk_score}/100</div>
@@ -314,11 +514,15 @@ export default function ConsolePage() {
                   </div>
                 )}
               </div>
-            </div>
-          )}
+            ) : !convening && (
+              <p className="text-sm" style={{ color: "var(--color-body)" }}>
+                The floor is empty. Convene the council to begin.
+              </p>
+            )}
+          </div>
 
           {error && (
-            <div className="card p-4 border-sell" style={{ borderColor: "var(--color-sell)" }}>
+            <div className="card p-4" style={{ borderColor: "var(--color-sell)" }}>
               <p className="eyebrow mb-1" style={{ color: "var(--color-sell)" }}>Committee error</p>
               <p className="mono text-sm" style={{ color: "var(--color-sell)" }}>{error}</p>
               <p className="text-muted text-xs mt-2">Open DevTools → Console for full stack trace</p>
@@ -348,8 +552,13 @@ export default function ConsolePage() {
           {/* Config panel */}
           <div className="card p-5 flex flex-col gap-5">
             <div className="flex items-center justify-between">
-              <p className="eyebrow">Trade Configuration</p>
-              <span className="eyebrow text-muted">autonomous</span>
+              <div>
+                <p className="eyebrow">Trade Configuration</p>
+                <p className="eyebrow mt-1" style={{ opacity: 0.7 }}>autonomous execution control</p>
+              </div>
+              <span className={`chip ${sessionStatus === "DELIBERATING" ? "chip-hold" : "chip-buy"}`}>
+                {sessionStatus === "DELIBERATING" ? "Live" : "Idle"}
+              </span>
             </div>
 
             {/* Market */}
@@ -376,36 +585,105 @@ export default function ConsolePage() {
 
             {/* Position size */}
             <div>
-              <label className="eyebrow block mb-2">Position size — {posPct}% of portfolio</label>
+              <div className="flex items-center justify-between mb-2">
+                <label className="eyebrow">Position Size</label>
+                <div className="flex border border-hairline">
+                  {(["pct", "usdt"] as const).map(u => (
+                    <button key={u} onClick={() => setPosUnit(u)}
+                      className={`px-2 py-1 eyebrow transition-colors ${posUnit === u ? "bg-elevated text-ink" : "text-muted hover:text-body"}`}>
+                      {u === "pct" ? "% Book" : "USDT"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="flex items-baseline justify-between mb-2">
+                <span className="eyebrow">share of portfolio</span>
+                <span className="mono text-sm text-ink">
+                  {posUnit === "pct" ? `${posPct}%` : `$${formatUSDT(exposureUsdt)}`}
+                </span>
+              </div>
               <input type="range" min={1} max={50} value={posPct}
                 onChange={e => setPosPct(Number(e.target.value))}
                 className="w-full accent-amber-500"
               />
               <div className="flex justify-between mono text-xs text-muted mt-1">
-                <span>1%</span><span>25%</span><span>50%</span>
+                <span>0%</span><span>25%</span><span>50%</span>
               </div>
             </div>
 
             {/* Risk level */}
             <div>
-              <label className="eyebrow block mb-2">Risk level</label>
+              <label className="eyebrow block mb-2">Risk Level</label>
               <div className="flex border border-hairline">
-                {(["conservative","moderate","aggressive"] as const).map(r => (
+                {([
+                  ["conservative", "Cons."],
+                  ["moderate",     "Mod." ],
+                  ["aggressive",   "Aggr."],
+                ] as const).map(([r, label]) => (
                   <button key={r} onClick={() => setRiskLevel(r)}
-                    className={`flex-1 py-2 eyebrow transition-colors capitalize ${riskLevel === r ? "bg-elevated text-ink" : "text-muted hover:text-body"}`}>
-                    {r.slice(0, 4).toUpperCase()}
+                    className={`flex-1 py-2 eyebrow transition-colors ${riskLevel === r ? "bg-elevated text-ink" : "text-muted hover:text-body"}`}>
+                    {label}
                   </button>
                 ))}
               </div>
             </div>
 
+            {/* Exposure summary */}
+            <div className="border-t border-hairline pt-4 flex flex-col gap-2">
+              <div className="flex items-baseline justify-between">
+                <span className="eyebrow">Estimated Exposure</span>
+                <span className="mono text-sm text-ink">${formatUSDT(exposureUsdt)}</span>
+              </div>
+              <div className="flex items-baseline justify-between">
+                <span className="eyebrow">Max Loss Estimate</span>
+                <span className="mono text-sm text-negative">−{finalLossPct}%</span>
+              </div>
+            </div>
+
+            {/* Max-loss tri-row */}
+            <div className="border border-hairline">
+              <div className="flex items-center justify-between px-3 py-2 border-b border-hairline">
+                <span className="eyebrow">Council est.</span>
+                <span className="mono text-sm text-ink">{councilLossPct}%</span>
+              </div>
+              <div className="flex items-center justify-between px-3 py-2 border-b border-hairline">
+                <span className="eyebrow">User max</span>
+                <div className="flex items-center gap-2">
+                  <input type="range" min={1} max={50} value={userMaxLoss}
+                    onChange={e => setUserMaxLoss(Number(e.target.value))}
+                    className="w-20 accent-amber-500" />
+                  <span className="mono text-sm text-ink w-10 text-right">{userMaxLoss}%</span>
+                </div>
+              </div>
+              <div className="flex items-center justify-between px-3 py-2 bg-elevated">
+                <span className="eyebrow">Final</span>
+                <span className="mono text-sm text-accent font-bold">{finalLossPct}%</span>
+              </div>
+            </div>
+            <p className="text-xs" style={{ color: "var(--color-body)", opacity: 0.85 }}>
+              Council suggests an optimal size; execution never exceeds your cap.
+            </p>
+
             <button onClick={handleConvene} disabled={convening || !client}
               className="btn-primary w-full !py-3">
-              {convening ? "Committee deliberating…" : "Convene the committee"}
+              {convening ? "Committee deliberating…" : "Convene Council"}
             </button>
             <p className="text-muted text-xs text-center">
-              The committee deliberates on-chain. This takes 1–3 minutes.
+              The committee stays idle until you convene. Launching opens the live console — takes 1–3 minutes.
             </p>
+          </div>
+
+          {/* Trade Ledger */}
+          <div className="card p-4">
+            <div className="flex items-center justify-between">
+              <p className="eyebrow">Trade Ledger</p>
+              <span className="eyebrow">{ledgerTrades.length} {ledgerTrades.length === 1 ? "trade" : "trades"}</span>
+            </div>
+            {ledgerTrades.length > 0 && (
+              <Link href="/portfolio" className="link text-xs mono mt-3 block">
+                View full history →
+              </Link>
+            )}
           </div>
 
           <Link href="/chamber" className="btn-ghost w-full text-center !py-2.5">
