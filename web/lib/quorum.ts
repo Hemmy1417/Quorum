@@ -51,16 +51,30 @@ export async function writeAndWait(
     // no value field — omit for non-payable calls (matches Apex pattern)
   });
   console.log("[QUORUM] tx submitted →", hash);
-  const receipt = await client.waitForTransactionReceipt({
-    hash,
-    status:   "ACCEPTED",
-    interval: 4000,   // poll every 4s
-    retries:  45,     // up to 3 minutes
-  });
-  console.log("[QUORUM] receipt →", JSON.stringify(receipt));
-  const status = receipt?.status ?? receipt?.consensus_data?.final_state ?? "";
-  if (String(status).toUpperCase() === "CANCELED" || String(status).toUpperCase() === "UNDETERMINED") {
-    throw new Error(`Transaction ${String(status)}: contract execution failed (check CoinGecko access)`);
+  try {
+    const receipt = await client.waitForTransactionReceipt({
+      hash,
+      status:   "ACCEPTED",
+      interval: 5000,   // poll every 5s
+      retries:  72,     // up to 6 minutes — five sequential eq_principle calls can take a while
+    });
+    console.log("[QUORUM] receipt →", JSON.stringify(receipt));
+    const status = receipt?.status ?? receipt?.consensus_data?.final_state ?? "";
+    if (String(status).toUpperCase() === "CANCELED" || String(status).toUpperCase() === "UNDETERMINED") {
+      throw new Error(`Transaction ${String(status)}: contract execution failed (check CoinGecko access)`);
+    }
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    // genlayer-js throws on poll timeout. If consensus just hasn't finished, the tx
+    // can still settle in the background — surface a clearer message so the user
+    // refreshes instead of thinking it failed.
+    if (msg.toLowerCase().includes("timed out")) {
+      throw new Error(
+        `Committee is still deliberating — validators didn't finish within 6 min. ` +
+        `Refresh in a minute; the session usually completes shortly after this message.`,
+      );
+    }
+    throw e;
   }
   return String(hash);
 }
