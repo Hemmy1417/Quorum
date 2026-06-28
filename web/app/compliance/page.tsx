@@ -4,8 +4,23 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useWallet, formatAddr } from "@/lib/wallet";
 import { getLeaderboard, getStats, formatUSDT, formatReturn } from "@/lib/quorum";
-import { CONTRACT_ADDRESS, explorerTxUrl } from "@/lib/config";
+import { CONTRACT_ADDRESS, CHAIN, EXPLORER_URL } from "@/lib/config";
 import type { LeaderboardEntry, Stats } from "@/lib/types";
+
+const METHOD = [
+  { n: "01", t: "Price fetch",
+    d: "Live market data is fetched on-chain via gl.nondet.web.render (CoinGecko), wrapped in eq_principle for validator agreement. No oracle dependency." },
+  { n: "02", t: "Independent analysis",
+    d: "Three analysts (Technical, News, Quant) score the asset in isolation. None of them sees another's reasoning before voting." },
+  { n: "03", t: "Consensus voting",
+    d: "Each analyst casts BUY / HOLD / SELL with a confidence score. Votes are sealed before the risk stage." },
+  { n: "04", t: "Risk veto",
+    d: "The Risk Manager audits position size, exposure, and confidence floor. A VETO overrides the majority and halts the trade." },
+  { n: "05", t: "Execution synthesis",
+    d: "The Chair weighs the debate, vote tally, and risk review, then delivers the binding verdict and writes it to chain." },
+  { n: "06", t: "Validator consensus",
+    d: "Every AI call is re-run by GenLayer's validator network. The session only finalises when the validators agree per the equivalence principle." },
+];
 
 export default function CompliancePage() {
   const { address, exportKey } = useWallet();
@@ -15,6 +30,7 @@ export default function CompliancePage() {
   const [exportedKey, setExportedKey] = useState("");
   const [exporting,   setExporting]   = useState(false);
   const [keyError,    setKeyError]    = useState("");
+  const [copied,      setCopied]      = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -38,15 +54,28 @@ export default function CompliancePage() {
     setExporting(false);
   }
 
+  async function copyAddress() {
+    try {
+      await navigator.clipboard.writeText(CONTRACT_ADDRESS);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {}
+  }
+
   return (
     <div className="mx-auto max-w-5xl px-5 py-10">
-      <div className="mb-10">
-        <p className="eyebrow mb-2">Transparency & governance</p>
-        <h1 className="display-upright text-3xl">Compliance</h1>
-        <p className="text-body mt-2">
-          Every session is recorded immutably on GenLayer's Studionet. No oracle. No server.
-          The AI deliberation is the contract.
-        </p>
+      <div className="mb-10 flex items-start justify-between flex-wrap gap-4">
+        <div>
+          <p className="eyebrow mb-2">Transparency & governance</p>
+          <h1 className="display-upright text-3xl">Compliance</h1>
+          <p className="text-body mt-2 max-w-2xl">
+            Every session is recorded immutably on GenLayer&apos;s Studionet. No oracle. No server.
+            The AI deliberation is the contract.
+          </p>
+        </div>
+        <span className="mono text-xs px-3 py-1 border border-hairline-strong" style={{ color: "var(--color-body)", opacity: 0.75 }}>
+          PAPER · no real funds
+        </span>
       </div>
 
       <div className="grid lg:grid-cols-2 gap-8">
@@ -76,52 +105,53 @@ export default function CompliancePage() {
             <p className="eyebrow mb-4">Smart contract</p>
             <div className="flex flex-col gap-3">
               <div>
-                <div className="eyebrow mb-1">Address</div>
+                <div className="flex items-baseline justify-between mb-1">
+                  <span className="eyebrow">Address</span>
+                  <button onClick={copyAddress} className="eyebrow link" style={{ background: "none", border: "none", cursor: "pointer" }}>
+                    {copied ? "copied ✓" : "copy"}
+                  </button>
+                </div>
                 <div className="mono text-xs text-muted break-all">{CONTRACT_ADDRESS}</div>
               </div>
-              <div>
-                <div className="eyebrow mb-1">Network</div>
-                <div className="mono text-sm">GenLayer Studionet</div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <div className="eyebrow mb-1">Network</div>
+                  <div className="mono text-sm">GenLayer Studionet</div>
+                </div>
+                <div>
+                  <div className="eyebrow mb-1">Chain ID</div>
+                  <div className="mono text-sm">{CHAIN.id}</div>
+                </div>
+                <div>
+                  <div className="eyebrow mb-1">Agents</div>
+                  <div className="mono text-sm">5 AI specialists</div>
+                </div>
+                <div>
+                  <div className="eyebrow mb-1">Validators / session</div>
+                  <div className="mono text-sm">5 per phase</div>
+                </div>
               </div>
-              <div>
-                <div className="eyebrow mb-1">Agent count</div>
-                <div className="mono text-sm">5 specialized AI agents</div>
-              </div>
-              <a href={`https://studio.genlayer.com/`} target="_blank" rel="noreferrer" className="link text-sm mt-2">
-                View on GenLayer Studio ↗
-              </a>
+              {EXPLORER_URL && (
+                <a href={EXPLORER_URL} target="_blank" rel="noreferrer" className="link text-sm mt-2">
+                  View on GenLayer Studio ↗
+                </a>
+              )}
             </div>
           </div>
 
           {/* Methodology */}
           <div className="card p-5">
             <p className="eyebrow mb-4">Decision methodology</p>
-            <div className="flex flex-col gap-3 text-sm text-body">
-              <p>
-                <strong className="text-ink">1. Price fetch</strong> — Live market data is fetched
-                on-chain via <code className="mono text-xs">gl.nondet.web.render</code> (CoinGecko).
-                No oracle dependency.
-              </p>
-              <p>
-                <strong className="text-ink">2. Independent analysis</strong> — Three agents
-                (Technical, News, Quant) analyse the asset independently without seeing each other's work.
-              </p>
-              <p>
-                <strong className="text-ink">3. Consensus voting</strong> — Each analyst votes BUY,
-                HOLD, or SELL with a confidence score. Votes are final before the risk stage.
-              </p>
-              <p>
-                <strong className="text-ink">4. Risk veto</strong> — The Risk Manager audits the
-                vote for capital risk. A VETO overrides the majority and freezes the session.
-              </p>
-              <p>
-                <strong className="text-ink">5. Execution synthesis</strong> — The Chair weighs all
-                inputs and delivers the final, binding verdict recorded on-chain.
-              </p>
-              <p>
-                <strong className="text-ink">6. Validator consensus</strong> — GenLayer's validator
-                network independently re-runs each AI call and must reach agreement before the tx finalises.
-              </p>
+            <div className="flex flex-col">
+              {METHOD.map((m, i) => (
+                <div key={m.n} className={`flex items-start gap-4 py-3 ${i < METHOD.length - 1 ? "border-b border-hairline" : ""}`}>
+                  <span className="eyebrow w-8 shrink-0 pt-0.5">{m.n}</span>
+                  <div className="flex-1">
+                    <div className="display-upright text-sm mb-1">{m.t}</div>
+                    <p className="text-body text-xs leading-relaxed">{m.d}</p>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -131,26 +161,40 @@ export default function CompliancePage() {
 
           {/* Leaderboard */}
           <div className="card p-5">
-            <p className="eyebrow mb-4">Performance leaderboard</p>
+            <div className="flex items-baseline justify-between mb-4">
+              <p className="eyebrow">Performance leaderboard</p>
+              <span className="eyebrow">{leaderboard.length} ranked</span>
+            </div>
             {loading && <div className="convening-ring mx-auto" />}
             {!loading && leaderboard.length === 0 && (
-              <p className="text-muted text-sm">No sessions recorded yet.</p>
+              <p className="text-body text-sm">No sessions recorded yet.</p>
             )}
-            {leaderboard.map((e, i) => (
-              <div key={i} className="flex items-center gap-3 py-3 border-b border-hairline last:border-0">
-                <span className="eyebrow w-6 text-center">{i + 1}</span>
-                <div className="flex-1 min-w-0">
-                  <div className="mono text-xs">{formatAddr(e.owner)}</div>
-                  <div className="eyebrow mt-0.5">{e.total_sessions} sessions · {e.wins}W / {e.losses}L</div>
-                </div>
-                <div className="text-right">
-                  <div className="mono text-sm font-bold">{formatUSDT(e.equity)}</div>
-                  <div className={`mono text-xs ${e.total_return_pct >= 0 ? "text-positive" : "text-negative"}`}>
-                    {formatReturn(e.total_return_pct)}
+            {leaderboard.map((e, i) => {
+              const isFirst    = i === 0;
+              const isYou      = address && e.owner.toLowerCase() === address.toLowerCase();
+              return (
+                <div key={i}
+                  className="flex items-center gap-3 py-3 border-b border-hairline last:border-0"
+                  style={isFirst ? { background: "rgba(245,158,11,0.04)", margin: "0 -1.25rem", padding: "0.75rem 1.25rem" } : {}}>
+                  <span className={`eyebrow w-6 text-center ${isFirst ? "text-accent" : ""}`}>
+                    {isFirst ? "★" : i + 1}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <div className="mono text-xs flex items-center gap-2">
+                      {formatAddr(e.owner)}
+                      {isYou && <span className="eyebrow text-accent">you</span>}
+                    </div>
+                    <div className="eyebrow mt-0.5">{e.total_sessions} sessions · {e.wins}W / {e.losses}L</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="mono text-sm font-bold">{formatUSDT(e.equity)}</div>
+                    <div className={`mono text-xs ${e.total_return_pct >= 0 ? "text-positive" : "text-negative"}`}>
+                      {formatReturn(e.total_return_pct)}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* Wallet / key export */}
@@ -158,20 +202,29 @@ export default function CompliancePage() {
             <div className="card p-5">
               <p className="eyebrow mb-4">Your wallet</p>
               <div className="mono text-xs text-muted break-all mb-4">{address}</div>
+              {!exportedKey && (
+                <div className="p-3 border border-hairline-strong mb-4" style={{ borderColor: "var(--color-accent)", background: "rgba(245,158,11,0.04)" }}>
+                  <div className="eyebrow mb-1" style={{ color: "var(--color-accent)" }}>Before you continue</div>
+                  <p className="text-xs leading-relaxed" style={{ color: "var(--color-body)" }}>
+                    Your private key controls this wallet and every paper-trading position attached to it.
+                    Anyone with the key can act as you. Never share it, never paste it into untrusted apps.
+                  </p>
+                </div>
+              )}
               <button onClick={handleExportKey} disabled={exporting}
                 className="btn-ghost w-full !py-2.5">
-                {exporting ? "Exporting…" : "Export private key"}
+                {exporting ? "Exporting…" : exportedKey ? "Re-export private key" : "Export private key"}
               </button>
               {keyError && <p className="text-sell text-xs mt-2">{keyError}</p>}
               {exportedKey && (
-                <div className="mt-4 p-3 bg-canvas border border-hairline-strong">
-                  <div className="eyebrow mb-1 text-sell">Keep this secret</div>
-                  <div className="mono text-xs break-all text-ink">{exportedKey}</div>
+                <div className="mt-4 p-3 bg-canvas border" style={{ borderColor: "var(--color-sell)" }}>
+                  <div className="eyebrow mb-1" style={{ color: "var(--color-sell)" }}>SECRET — handle like a password</div>
+                  <div className="mono text-xs break-all text-ink select-all">{exportedKey}</div>
                 </div>
               )}
               <p className="text-muted text-xs mt-3 leading-relaxed">
-                Export your private key to import into MetaMask or any compatible wallet.
-                This key controls your on-chain identity.
+                Import this key into MetaMask or any compatible wallet to take full custody.
+                Once exported, treat it as compromised if it ever leaves this device.
               </p>
             </div>
           )}
