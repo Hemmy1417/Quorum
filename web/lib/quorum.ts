@@ -2,8 +2,16 @@
 type Client = any;
 
 import { createClient } from "genlayer-js";
+import { ethers } from "ethers";
 import { CHAIN, CONTRACT_ADDRESS } from "./config";
 import type { Session, Portfolio, LeaderboardEntry, Stats } from "./types";
+
+// Contract stores keys via str(gl.message.sender_address) which yields the
+// EIP-55 checksummed form. Whatever case the frontend gives us, normalise
+// before querying so reads always match the stored key.
+function checksum(a: string): string {
+  try { return ethers.getAddress(a); } catch { return a; }
+}
 
 // ── read with retry ────────────────────────────────────────────────────────
 
@@ -66,13 +74,15 @@ export async function getStats(): Promise<Stats> {
 }
 
 export async function getPortfolio(address: string): Promise<Portfolio | null> {
-  const raw = await read("get_portfolio", [address]);
+  const raw = await read("get_portfolio", [checksum(address)]);
   if (!raw) return null;
   return JSON.parse(raw as string);
 }
 
 export async function getHistory(address: string, n = 20): Promise<Session[]> {
-  const raw = await read("get_history", [address, BigInt(n)]);
+  console.log("[QUORUM] getHistory →", checksum(address), "n=", n);
+  const raw = await read("get_history", [checksum(address), BigInt(n)]);
+  console.log("[QUORUM] getHistory raw →", typeof raw === "string" ? raw.slice(0, 200) : raw);
   if (!raw) return [];
   try { return JSON.parse(raw as string); } catch { return []; }
 }
