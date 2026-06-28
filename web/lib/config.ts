@@ -7,12 +7,12 @@ export const CHAIN_RPC = studionet.rpcUrls.default.http[0];
 export const CONTRACT_ADDRESS  = (process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || "") as `0x${string}`;
 export const CONTRACT_CONFIGURED = /^0x[a-fA-F0-9]{40}$/.test(CONTRACT_ADDRESS);
 
+export const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
+
 if (typeof window !== "undefined") {
   console.log("[QUORUM] Contract address:", CONTRACT_ADDRESS);
   console.log("[QUORUM] API URL:", API_URL);
 }
-
-export const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
 export const EXPLORER_URL = (studionet.blockExplorers?.default?.url || "").replace(/\/$/, "");
 
