@@ -34,6 +34,70 @@ const LOSS_FACTOR: Record<"conservative"|"moderate"|"aggressive", number> = {
   aggressive:   0.18,
 };
 
+function AssetPicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function onDoc(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, [open]);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center justify-between py-2 border-b transition-colors mono text-sm"
+        style={{
+          background: "transparent",
+          borderColor: open ? "var(--color-accent)" : "var(--color-hairline-strong)",
+          color: "var(--color-accent)",
+          letterSpacing: "0.05em",
+        }}
+      >
+        <span>{value}</span>
+        <span className="eyebrow" style={{ color: "var(--color-accent)" }}>{open ? "▲" : "▼"}</span>
+      </button>
+      {open && (
+        <div
+          className="absolute left-0 right-0 mt-1 z-20 max-h-64 overflow-y-auto"
+          style={{
+            background: "var(--color-elevated)",
+            border: "1px solid var(--color-hairline-strong)",
+            boxShadow: "0 8px 20px rgba(0,0,0,0.4)",
+          }}
+        >
+          {ASSETS.map(a => {
+            const selected = a === value;
+            return (
+              <button
+                key={a}
+                type="button"
+                onClick={() => { onChange(a); setOpen(false); }}
+                className="block w-full text-left px-3 py-2 mono text-sm transition-colors"
+                style={{
+                  background: selected ? "rgba(245,158,11,0.12)" : "transparent",
+                  color:      selected ? "var(--color-accent)" : "var(--color-ink)",
+                  letterSpacing: "0.05em",
+                }}
+                onMouseEnter={e => { if (!selected) (e.currentTarget as HTMLButtonElement).style.background = "rgba(245,158,11,0.06)"; }}
+                onMouseLeave={e => { if (!selected) (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}
+              >
+                {a}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function voteState(agentName: string, session: Session | null): string {
   if (!session) return "awaiting";
   const output = session.agent_outputs?.find(a => a.agent === agentName);
@@ -584,10 +648,7 @@ export default function ConsolePage() {
             {/* Asset */}
             <div>
               <label className="eyebrow block mb-2">Asset</label>
-              <select value={asset} onChange={e => setAsset(e.target.value)}
-                className="field mono text-sm">
-                {ASSETS.map(a => <option key={a} value={a}>{a}</option>)}
-              </select>
+              <AssetPicker value={asset} onChange={setAsset} />
             </div>
 
             {/* Position size */}

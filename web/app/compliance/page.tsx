@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useWallet, formatAddr } from "@/lib/wallet";
 import { getLeaderboard, getStats, formatUSDT, formatReturn } from "@/lib/quorum";
-import { CONTRACT_ADDRESS, CHAIN, EXPLORER_URL } from "@/lib/config";
+import { CONTRACT_ADDRESS, CHAIN } from "@/lib/config";
 import type { LeaderboardEntry, Stats } from "@/lib/types";
 
 const METHOD = [
@@ -131,11 +131,13 @@ export default function CompliancePage() {
                   <div className="mono text-sm">5 per phase</div>
                 </div>
               </div>
-              {EXPLORER_URL && (
-                <a href={EXPLORER_URL} target="_blank" rel="noreferrer" className="link text-sm mt-2">
-                  View on GenLayer Studio ↗
-                </a>
-              )}
+              <a
+                href={`https://studio.genlayer.com/?import-contract=${CONTRACT_ADDRESS}`}
+                target="_blank" rel="noreferrer"
+                className="link text-sm mt-2"
+              >
+                Inspect contract on GenLayer Studio ↗
+              </a>
             </div>
           </div>
 
