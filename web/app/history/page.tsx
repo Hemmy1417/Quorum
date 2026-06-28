@@ -41,11 +41,14 @@ export default function HistoryPage() {
 
   return (
     <div className="mx-auto max-w-5xl px-5 py-10">
-      <div className="mb-8 flex items-start justify-between">
+      <div className="mb-8 flex items-start justify-between flex-wrap gap-4">
         <div>
           <p className="eyebrow mb-2">All sessions</p>
           <h1 className="display-upright text-3xl">Session History</h1>
-          <p className="text-body mt-2">{sessions.length} sessions on-chain</p>
+          <p className="text-body mt-2">
+            {sessions.length} {sessions.length === 1 ? "session" : "sessions"} on-chain
+            <span className="mono text-xs ml-3" style={{ color: "var(--color-body)", opacity: 0.6 }}>· PAPER · no real funds</span>
+          </p>
         </div>
         <Link href="/console" className="btn-primary">+ New session</Link>
       </div>
@@ -71,6 +74,9 @@ export default function HistoryPage() {
             {group.map((s, i) => (
               <div key={i} className="card p-4 flex items-center gap-4">
                 <span className={`chip chip-${s.decision.toLowerCase()} shrink-0`}>{s.decision}</span>
+                <span className="eyebrow shrink-0 hidden sm:inline" style={{ opacity: 0.5 }}>
+                  #{s.session_id.split("_").pop()}
+                </span>
                 <div className="flex-1 min-w-0">
                   <div className="text-body text-sm truncate">{s.summary}</div>
                 </div>
@@ -79,9 +85,9 @@ export default function HistoryPage() {
                     <div className="mono text-xs text-muted">{s.market}</div>
                     <div className="mono text-xs">{s.confidence}%</div>
                   </div>
-                  {s.trade?.pnl !== undefined && s.trade.pnl !== 0 && (
-                    <div className={`mono text-sm font-bold ${s.trade.pnl >= 0 ? "text-positive" : "text-negative"}`}>
-                      {s.trade.pnl >= 0 ? "+" : ""}{s.trade.pnl.toFixed(2)}
+                  {s.paper_trade?.pnl !== undefined && s.paper_trade.pnl !== 0 && (
+                    <div className={`mono text-sm font-bold ${s.paper_trade.pnl >= 0 ? "text-positive" : "text-negative"}`}>
+                      {s.paper_trade.pnl >= 0 ? "+" : ""}{s.paper_trade.pnl.toFixed(2)}
                     </div>
                   )}
                   <div className="mono text-xs text-muted">{s.timestamp?.slice(0, 10)}</div>

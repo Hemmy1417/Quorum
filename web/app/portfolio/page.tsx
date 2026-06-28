@@ -55,8 +55,10 @@ export default function PortfolioPage() {
     );
   }
 
-  const wins  = sessions.filter(s => (s.trade?.pnl ?? 0) > 0).length;
-  const total = sessions.filter(s => s.trade).length;
+  // Prefer contract-tracked win/loss counters; fall back to derived if missing.
+  const wins  = portfolio?.wins   ?? sessions.filter(s => (s.paper_trade?.pnl ?? 0) > 0).length;
+  const losses = portfolio?.losses ?? sessions.filter(s => (s.paper_trade?.pnl ?? 0) < 0).length;
+  const total = wins + losses;
 
   return (
     <div className="mx-auto max-w-5xl px-5 py-10">
@@ -118,20 +120,32 @@ export default function PortfolioPage() {
             <EquityBar pct={(portfolio.equity / STARTING) * 100} />
           </div>
 
-          {/* Holdings */}
-          {portfolio.holdings && Object.keys(portfolio.holdings).length > 0 && (
+          {/* Open positions */}
+          {portfolio.open_positions && portfolio.open_positions.length > 0 && (
             <div className="card p-5">
-              <p className="eyebrow mb-4">Open positions</p>
+              <div className="flex items-baseline justify-between mb-4">
+                <p className="eyebrow">Open positions</p>
+                <span className="eyebrow">{portfolio.open_positions.length} live</span>
+              </div>
               <div className="flex flex-col gap-3">
-                {Object.entries(portfolio.holdings).map(([asset, holding]) => (
-                  <div key={asset} className="flex items-center justify-between py-2 border-b border-hairline last:border-0">
+                {portfolio.open_positions.map((pos, i) => (
+                  <div key={i} className="flex items-center justify-between py-2 border-b border-hairline last:border-0">
                     <div>
-                      <div className="display-upright text-base">{asset}</div>
-                      <div className="mono text-xs text-muted">{holding.qty.toFixed(6)} units</div>
+                      <div className="flex items-center gap-2">
+                        <span className={`chip chip-${(pos.direction ?? "buy").toLowerCase()}`}>
+                          {pos.direction ?? "BUY"}
+                        </span>
+                        <span className="display-upright text-base">{pos.pair ?? "—"}</span>
+                      </div>
+                      <div className="mono text-xs text-muted mt-1">
+                        {(pos.quantity ?? 0).toFixed(6)} {(pos.pair ?? "").replace("USDT", "")}
+                      </div>
                     </div>
                     <div className="text-right">
-                      <div className="mono text-sm">@ ${holding.avg_price.toLocaleString()}</div>
-                      <div className="mono text-xs text-muted">avg entry</div>
+                      <div className="mono text-sm">@ ${(pos.entry_price ?? 0).toLocaleString()}</div>
+                      <div className="mono text-xs text-muted">
+                        ${formatUSDT(pos.allocation ?? 0)} allocated
+                      </div>
                     </div>
                   </div>
                 ))}

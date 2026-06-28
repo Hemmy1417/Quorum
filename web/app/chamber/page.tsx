@@ -37,10 +37,17 @@ export default function ChamberPage() {
 
   return (
     <div className="mx-auto max-w-5xl px-5 py-10">
-      <div className="mb-8">
-        <p className="eyebrow mb-2">Live chamber</p>
-        <h1 className="display-upright text-3xl">Session Archive</h1>
-        <p className="text-body mt-2">A full replay of every committee deliberation.</p>
+      <div className="mb-8 flex items-start justify-between flex-wrap gap-4">
+        <div>
+          <p className="eyebrow mb-2">Live chamber</p>
+          <h1 className="display-upright text-3xl">Session Archive</h1>
+          <p className="text-body mt-2">
+            A full replay of every committee deliberation — debate, votes, risk review, verdict.
+          </p>
+        </div>
+        <span className="mono text-xs px-3 py-1 border border-hairline-strong" style={{ color: "var(--color-body)", opacity: 0.75 }}>
+          PAPER · no real funds
+        </span>
       </div>
 
       {loading && (
@@ -63,15 +70,18 @@ export default function ChamberPage() {
             {/* Header */}
             <div className="flex items-start justify-between gap-4 mb-4">
               <div>
-                <div className="flex items-center gap-3 mb-1">
+                <div className="flex items-center gap-3 mb-1 flex-wrap">
                   <span className={`chip chip-${s.decision.toLowerCase()}`}>{s.decision}</span>
                   <span className="display-upright text-base">{s.asset}</span>
                   <span className="eyebrow">{s.market}</span>
+                  <span className="eyebrow" style={{ opacity: 0.6 }}>
+                    · session #{s.session_id.split("_").pop()}
+                  </span>
                 </div>
                 <p className="text-body text-sm">{s.summary}</p>
               </div>
               <div className="text-right shrink-0">
-                <div className="mono text-xs text-muted">{s.timestamp}</div>
+                <div className="mono text-xs text-muted">{s.timestamp ?? ""}</div>
                 <div className="mono text-sm font-bold mt-1">
                   {s.confidence}% confidence
                 </div>
