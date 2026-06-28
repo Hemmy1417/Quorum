@@ -100,7 +100,18 @@ class Quorum(gl.Contract):
             f"&include_24hr_vol=true"
             f"&include_market_cap=true"
         )
-        raw = gl.nondet.web.render(url)
+
+        def fetch():
+            # mode="text" returns raw JSON; default (html) would render via browser and fail on JSON endpoints
+            return gl.nondet.web.render(url, mode="text")
+
+        # gl.nondet.web.render MUST be wrapped in an eq_principle scope from a @gl.public.write method.
+        # Comparative principle tolerates small price drift between validators.
+        raw = gl.eq_principle.prompt_comparative(
+            fetch,
+            "Responses contain the same coin price within 2% tolerance",
+        )
+
         try:
             data = json.loads(raw)
             c    = data.get(coin_id, {})
