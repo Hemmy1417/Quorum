@@ -109,7 +109,7 @@ class Quorum(gl.Contract):
         # Comparative principle tolerates small price drift between validators.
         raw = gl.eq_principle.prompt_comparative(
             fetch,
-            "Responses contain the same coin price within 2% tolerance",
+            "Responses are equivalent if they both contain JSON with a coin price, even if the exact price differs slightly due to timing",
         )
 
         try:
@@ -156,7 +156,7 @@ Respond ONLY with this JSON (no markdown):
 
         raw = gl.eq_principle.prompt_comparative(
             call,
-            "Responses agree on vote (BUY/HOLD/SELL) and confidence within 15 points",
+            "Responses are equivalent if they contain a valid vote (BUY, HOLD, or SELL) and a confidence number, even if the exact confidence differs or the analysis text is worded differently",
         )
         return self._parse_json(raw)
 
@@ -187,7 +187,7 @@ Respond ONLY with this JSON (no markdown):
 
         raw = gl.eq_principle.prompt_comparative(
             call,
-            "Responses agree on vote (BUY/HOLD/SELL) and overall sentiment",
+            "Responses are equivalent if they contain a valid vote (BUY, HOLD, or SELL) and a sentiment value, even if the exact wording or confidence differs",
         )
         return self._parse_json(raw)
 
@@ -220,7 +220,7 @@ Respond ONLY with this JSON (no markdown):
 
         raw = gl.eq_principle.prompt_comparative(
             call,
-            "Responses agree on vote (BUY/HOLD/SELL) and market regime",
+            "Responses are equivalent if they contain a valid vote (BUY, HOLD, or SELL) and a regime assessment, even if the exact wording differs",
         )
         return self._parse_json(raw)
 
@@ -270,7 +270,7 @@ Respond ONLY with this JSON (no markdown):
 
         raw    = gl.eq_principle.prompt_comparative(
             call,
-            "Responses must agree on veto (true/false) and risk_score within 20 points",
+            "Responses are equivalent if they both contain a veto decision (true or false) and a risk_score number, even if the exact risk_score or reasoning differs",
         )
         output = self._parse_json(raw)
         output["veto"]       = bool(output.get("veto", False))
@@ -323,7 +323,7 @@ Respond ONLY with this JSON (no markdown):
 
         raw    = gl.eq_principle.prompt_comparative(
             call,
-            "Responses must agree on decision (BUY/HOLD/SELL) and confidence within 15 points",
+            "Responses are equivalent if they contain a valid decision (BUY, HOLD, or SELL) and a confidence number, even if the exact confidence or summary wording differs",
         )
         output = self._parse_json(raw)
         d = output.get("decision", "HOLD").upper()

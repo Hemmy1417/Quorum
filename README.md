@@ -5,7 +5,7 @@ A five-agent AI investment committee that runs on-chain on GenLayer Studionet.
 Pick an asset, choose your risk tolerance, hit convene. Five agents pull live price data, argue, vote, and one of them (the Risk Manager) can veto the whole thing. The Chair writes the final call to chain. It's paper trading — every wallet starts with 100,000 fictional USDT and positions settle against the same price the committee saw.
 
 - Live: [quorum.vercel.app](https://quorum.vercel.app)
-- Contract: [`0x69f8212a897Ae6FB9aD9a7C1AB87d1dF0609B9FA`](https://studio.genlayer.com/?import-contract=0x69f8212a897Ae6FB9aD9a7C1AB87d1dF0609B9FA)
+- Contract: [`0xe743f116b928d8c3405d2A442e1Bf61746CA3C38`](https://studio.genlayer.com/?import-contract=0xe743f116b928d8c3405d2A442e1Bf61746CA3C38)
 - Chain: GenLayer Studionet (id `61999`)
 
 ## The agents
@@ -75,7 +75,7 @@ npm run dev                        # localhost:3001
 `.env.local` for the web app:
 
 ```
-NEXT_PUBLIC_CONTRACT_ADDRESS=0x69f8212a897Ae6FB9aD9a7C1AB87d1dF0609B9FA
+NEXT_PUBLIC_CONTRACT_ADDRESS=0xe743f116b928d8c3405d2A442e1Bf61746CA3C38
 NEXT_PUBLIC_API_URL=https://quorum-production-0043.up.railway.app
 NEXT_PUBLIC_NETWORK=studionet
 
