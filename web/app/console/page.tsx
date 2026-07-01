@@ -161,14 +161,34 @@ export default function ConsolePage() {
     [history],
   );
 
+  // After a wait timeout the tx is usually still queued on-chain (convenes to the
+  // same contract serialize). Keep polling history until the new session lands.
+  const watchForSession = useCallback(async (prevNewestId: string | undefined) => {
+    for (let i = 0; i < 45; i++) {          // every 20s, up to 15 min
+      await new Promise(r => setTimeout(r, 20000));
+      try {
+        const hist = await getHistory(address, 20);
+        if (hist.length && hist[0].session_id !== prevNewestId) {
+          setHistory(hist);
+          setSession(hist[0]);
+          setError("");
+          getPortfolio(address).then(p => p && setPortfolio(p)).catch(() => {});
+          return;
+        }
+      } catch { /* transient read errors — keep watching */ }
+    }
+  }, [address]);
+
   async function handleConvene() {
     if (!client || !address) return;
     setError(""); setConvening(true); setSession(null); setStep(0);
 
+    const prevNewestId = history[0]?.session_id;
+
     const interval = setInterval(() => {
       stepRef.current = Math.min(stepRef.current + 1, STEPS.length - 1);
       setStep(stepRef.current);
-    }, 12000);
+    }, 25000);
 
     try {
       const hash = await convene(client, asset, market, posPct, riskLevel);
@@ -177,7 +197,15 @@ export default function ConsolePage() {
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       console.error("[QUORUM] convene failed:", e);
-      setError(msg);
+      if (msg.includes("still deliberating")) {
+        setError(
+          "The committee is still deliberating — your session is queued on-chain. " +
+          "Watching for the verdict; it will appear here automatically.",
+        );
+        watchForSession(prevNewestId);
+      } else {
+        setError(msg);
+      }
     } finally {
       clearInterval(interval);
       setStep(STEPS.length - 1);
